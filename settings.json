@@ -1,0 +1,5 @@
+{
+    "API_URL": "http://localhost:8000",
+    "DB_CONNECTION_STRING": "DRIVER={SQL Server};SERVER=localhost;DATABASE=database;UID=user;PWD=password",
+    "SQL_QUERY": "SELECT * FROM PRODUTOS"
+}
