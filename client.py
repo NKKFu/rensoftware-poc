@@ -29,6 +29,8 @@ def fetch_products_from_db():
         "code": str(row[0]),
         "stock": str(row[1]),
         "description": str(row[2]),
+        "ean": str(row[3]),
+        "stockMin": str(row[4]),
     } for row in cursor.fetchall()]
 
     conn.close()

@@ -11,12 +11,13 @@ def init_db():
     conn = sqlite3.connect("products.db")
     cursor = conn.cursor()
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        code TEXT UNIQUE,
-        description TEXT,
-        stock TEXT
-    )
+        CREATE TABLE IF NOT EXISTS products (
+            code TEXT PRIMARY KEY,
+            description TEXT,
+            stock TEXT,
+            stockMin TEXT,
+            ean TEXT
+        )
     """)
     conn.commit()
     conn.close()
@@ -28,23 +29,31 @@ class Product(BaseModel):
     code: str
     description: str
     stock: str
+    stockMin: str
+    ean: str
 
 @app.post("/products")
 def add_products(products: List[Product]):
     conn = sqlite3.connect("products.db")
     cursor = conn.cursor()
-    
+
     for product in products:
         cursor.execute("""
-            INSERT INTO products (code, description, stock) VALUES (?, ?, ?)
-            ON CONFLICT(code) DO UPDATE SET description=excluded.description, stock=excluded.stock
-        """, (product.code, product.description, product.stock))
-    
+            INSERT INTO products (code, description, stock, stockMin, ean) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(code) DO UPDATE SET description=excluded.description, stock=excluded.stock, stockMin=excluded.stockMin, ean=excluded.ean
+        """, (product.code, product.description, product.stock, product.stockMin, product.ean))
+
     conn.commit()
-    
-    cursor.execute("SELECT code, description, stock FROM products")
-    all_products = [{"code": row[0], "description": row[1], "stock": row[2]} for row in cursor.fetchall()]
-    
+
+    cursor.execute("SELECT code, description, stock, stockMin, ean FROM products")
+    all_products = [{
+        "code": row[0],
+        "description": row[1],
+        "stock": row[2],
+        "stockMin": row[3],
+        "ean": row[4],
+    } for row in cursor.fetchall()]
+
     conn.close()
     return all_products
 
@@ -52,9 +61,14 @@ def add_products(products: List[Product]):
 def get_products():
     conn = sqlite3.connect("products.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT code, description, stock FROM products")
-    columns = [column[0] for column in cursor.description]
-    products = [dict(zip(columns, row)) for row in cursor.fetchall()]
+    cursor.execute("SELECT code, description, stock, stockMin, ean FROM products")
+    products = [{
+        "code": row[0],
+        "description": row[1],
+        "stock": row[2],
+        "stockMin": row[3],
+        "ean": row[4],
+    } for row in cursor.fetchall()]
     conn.close()
     return products
 
