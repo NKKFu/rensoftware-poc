@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import sqlite3
 
 
@@ -16,7 +16,8 @@ def init_db():
             description TEXT,
             stock TEXT,
             stockMin TEXT,
-            ean TEXT
+            ean TEXT,
+            lastPurchase TEXT
         )
     """)
     conn.commit()
@@ -31,6 +32,7 @@ class Product(BaseModel):
     stock: str
     stockMin: str
     ean: str
+    lastPurchase: Optional[str] = None
 
 @app.post("/products")
 def add_products(products: List[Product]):
@@ -39,19 +41,20 @@ def add_products(products: List[Product]):
 
     for product in products:
         cursor.execute("""
-            INSERT INTO products (code, description, stock, stockMin, ean) VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(code) DO UPDATE SET description=excluded.description, stock=excluded.stock, stockMin=excluded.stockMin, ean=excluded.ean
-        """, (product.code, product.description, product.stock, product.stockMin, product.ean))
+            INSERT INTO products (code, description, stock, stockMin, ean, lastPurchase) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(code) DO UPDATE SET description=excluded.description, stock=excluded.stock, stockMin=excluded.stockMin, ean=excluded.ean, lastPurchase=excluded.lastPurchase
+        """, (product.code, product.description, product.stock, product.stockMin, product.ean, product.lastPurchase))
 
     conn.commit()
 
-    cursor.execute("SELECT code, description, stock, stockMin, ean FROM products")
+    cursor.execute("SELECT code, description, stock, stockMin, ean, lastPurchase FROM products")
     all_products = [{
         "code": row[0],
         "description": row[1],
         "stock": row[2],
         "stockMin": row[3],
         "ean": row[4],
+        "lastPurchase": row[5],
     } for row in cursor.fetchall()]
 
     conn.close()
@@ -61,13 +64,14 @@ def add_products(products: List[Product]):
 def get_products():
     conn = sqlite3.connect("products.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT code, description, stock, stockMin, ean FROM products")
+    cursor.execute("SELECT code, description, stock, stockMin, ean, lastPurchase FROM products")
     products = [{
         "code": row[0],
         "description": row[1],
         "stock": row[2],
         "stockMin": row[3],
         "ean": row[4],
+        "lastPurchase": row[5],
     } for row in cursor.fetchall()]
     conn.close()
     return products
